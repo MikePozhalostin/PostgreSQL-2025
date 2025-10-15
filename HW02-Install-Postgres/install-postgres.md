@@ -12,11 +12,25 @@
  -- -d - запуск контейнера в фоновом режиме;
  -- версия postgres (17);
 
+Контейнер:
+ ![docker](images/add_docker_container.png)
+
+Подключение pgAdmin, чистая база test_db:
+ ![clean](images/clean_test_db.png)
+
 3. Создал таблицу Users, добавил данные;
+ ![users](images/add_users.png)
+ Выполнил команду добавления данных
+  `INSERT INTO public."Users"(
+	"Id", "Name")
+	VALUES (gen_random_uuid(), 'mike');`
+
 4. Удалил контейнер;
 5. Запустил контейнер заново;
-6. Данные **не сохранились**; 
+6. Данные **не сохранились**;
+ ![after_remove](images/data_after_remove_container.png)
 
 Если повторить действия, но в запуске контейнера прописать путь для хранения данных бд на машине(volume), где запускается контейнер, то после пересоздания контейнера данные **сохранятся**.
 Например, добавляем -v /postgres-test:/var/lib/postgresql/data.
+ ![volume](images/add_volume.png)
 Тогда данные сохранятся в \\wsl.localhost\docker-desktop\tmp\docker-desktop-root\postgres-test\pgdata
