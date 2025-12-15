@@ -7,7 +7,7 @@
 ![folder](images/folder.png)
 4. Создал копию таблицы student без данных;
 ![copy_table](images/copy_table.png)
-5. Восстановил новил данные;
+5. Восстановил данные;
 ![copy_table](images/logic_back.png)
 6. Создал backup с помощью pg_dump двух таблиц командой `pg_dump \
   -Fc \
