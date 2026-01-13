@@ -1,0 +1,321 @@
+Ips:
+1: 192.168.1.155
+2: 192.168.1.185
+3: 192.168.1.152
+
+Первая машина:
+sudo apt -y install etcd-server
+sudo apt -y install etcd-client
+
+sudo systemctl stop etcd
+sudo systemctl disable etcd
+
+sudo rm -rf /var/lib/etcd/default
+sudo nano /etc/default/etcd
+
+ETCD_NAME="etcd-Name-1"
+ETCD_LISTEN_CLIENT_URLS="http://192.168.1.155:2379,http://localhost:2379"
+ETCD_ADVERTISE_CLIENT_URLS="http://192.168.1.155:2379"
+ETCD_LISTEN_PEER_URLS="http://192.168.1.155:2380"
+ETCD_INITIAL_ADVERTISE_PEER_URLS="http://192.168.1.155:2380"
+ETCD_INITIAL_CLUSTER_TOKEN="etcd_Name_Claster"
+ETCD_INITIAL_CLUSTER="etcd-Name-1=http://192.168.1.155:2380,etcd-Name-2=http://192.168.1.185:2380,etcd-Name-3=http://192.168.1.152:2380"
+ETCD_INITIAL_CLUSTER_STATE="new"
+ETCD_DATA_DIR="/var/lib/etcd"
+ETCD_ELECTION_TIMEOUT="10000"
+ETCD_HEARTBEAT_INTERVAL="2000"
+ETCD_INITIAL_ELECTION_TICK_ADVANCE="false"
+ETCD_ENABLE_V2="true"
+
+Вторая машина:
+sudo apt -y install etcd-server
+sudo apt -y install etcd-client
+
+sudo systemctl stop etcd
+sudo systemctl disable etcd
+
+sudo rm -rf /var/lib/etcd/default
+sudo nano /etc/default/etcd
+
+ETCD_NAME="etcd-Name-2"
+ETCD_LISTEN_CLIENT_URLS="http://192.168.1.185:2379,http://localhost:2379"
+ETCD_ADVERTISE_CLIENT_URLS="http://192.168.1.185:2379"
+ETCD_LISTEN_PEER_URLS="http://192.168.1.185:2380"
+ETCD_INITIAL_ADVERTISE_PEER_URLS="http://192.168.1.185:2380"
+ETCD_INITIAL_CLUSTER_TOKEN="etcd_Name_Claster"
+ETCD_INITIAL_CLUSTER="etcd-Name-1=http://192.168.1.155:2380,etcd-Name-2=http://192.168.1.185:2380,etcd-Name-3=http://192.168.1.152:2380"
+ETCD_INITIAL_CLUSTER_STATE="new"
+ETCD_DATA_DIR="/var/lib/etcd"
+ETCD_ELECTION_TIMEOUT="10000"
+ETCD_HEARTBEAT_INTERVAL="2000"
+ETCD_INITIAL_ELECTION_TICK_ADVANCE="false"
+ETCD_ENABLE_V2="true"
+
+Третья машина:
+sudo apt -y install etcd-server
+sudo apt -y install etcd-client
+
+sudo systemctl stop etcd
+sudo systemctl disable etcd
+
+sudo rm -rf /var/lib/etcd/default
+sudo nano /etc/default/etcd
+
+ETCD_NAME="etcd-Name-3"
+ETCD_LISTEN_CLIENT_URLS="http://192.168.1.152:2379,http://localhost:2379"
+ETCD_ADVERTISE_CLIENT_URLS="http://192.168.1.152:2379"
+ETCD_LISTEN_PEER_URLS="http://192.168.1.152:2380"
+ETCD_INITIAL_ADVERTISE_PEER_URLS="http://192.168.1.152:2380"
+ETCD_INITIAL_CLUSTER_TOKEN="etcd_Name_Claster"
+ETCD_INITIAL_CLUSTER="etcd-Name-1=http://192.168.1.155:2380,etcd-Name-2=http://192.168.1.185:2380,etcd-Name-3=http://192.168.1.152:2380"
+ETCD_INITIAL_CLUSTER_STATE="new"
+ETCD_DATA_DIR="/var/lib/etcd"
+ETCD_ELECTION_TIMEOUT="10000"
+ETCD_HEARTBEAT_INTERVAL="2000"
+ETCD_INITIAL_ELECTION_TICK_ADVANCE="false"
+ETCD_ENABLE_V2="true"
+
+
+sudo systemctl daemon-reload
+sudo systemctl enable etcd
+sudo systemctl start etcd
+sudo etcdctl member list
+sudo systemctl status etcd
+sudo systemctl stop etcd
+sudo systemctl is-enabled etcd
+sudo systemctl restart etcd
+sudo etcdctl endpoint status --cluster -w table
+journalctl –e посмотреть информацию об ошибке
+sudo rm -R /var/lib/etcd/member/
+
+
+Postgres:
+sudo apt update
+sudo dpkg --configure -a
+sudo apt-get install wget ca-certificates
+wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ `lsb_release -cs`-pgdg main" >> /etc/apt/sources.list.d/pgdg.list'
+sudo apt-get update
+sudo apt install postgresql-17 postgresql-client-17
+sudo systemctl status postgresql
+sudo -u postgres pg_lsclusters
+
+sudo -u postgres psql postgres
+create user replicator replication login encrypted password '1';
+
+sudo nano /etc/postgresql/17/main/pg_hba.conf
+host all all 0.0.0.0/0 scram-sha-256
+host replication replicator 0.0.0.0/0 scram-sha-256
+
+sudo nano /etc/postgresql/17/main/postgresql.conf
+listen_addresses = '*'
+
+sudo systemctl restart postgresql
+
+Для второй и третьей ноды:
+sudo systemctl stop postgresql
+sudo rm -rf /var/lib/postgresql/17/main/*
+
+
+Patroni:
+sudo apt -y install python3 python3-pip python3-dev python3-psycopg2 libpq-dev
+sudo pip3 install launchpadlib --break-system-packages
+sudo pip3 install --upgrade setuptools --break-system-packages
+sudo pip3 install psycopg2 --break-system-packages
+sudo pip3 install python-etcd --break-system-packages
+sudo apt -y install patroni
+sudo systemctl stop patroni
+sudo systemctl disable patroni
+
+Первая машина:
+
+sudo nano /etc/patroni.yml
+
+scope: cluster-patroni
+namespace: /db/
+name: node1
+
+restapi:
+  listen: 192.168.1.155:8008
+  connect_address: 192.168.1.155:8008
+
+etcd:
+  hosts: 192.168.1.155:2379,192.168.1.185:2379,192.168.1.152:2379
+
+bootstrap:
+  dcs:
+    ttl: 30
+    loop_wait: 10
+    retry_timeout: 10
+    maximum_lag_on_failover: 1048576
+    postgresql:
+      use_pg_rewind: true
+      parameters:
+        autovacuum_analyze_scale_factor: 0.01
+
+  initdb:
+  - encoding: UTF8
+
+  pg_hba:
+  - host replication replicator 127.0.0.1/8 scram-sha-256
+  - host replication replicator 192.168.1.155/32 scram-sha-256
+  - host replication replicator 192.168.1.185/32 scram-sha-256
+  - host replication replicator 192.168.1.152/32 scram-sha-256
+  - host all all 0.0.0.0/0 scram-sha-256
+
+  users:
+    replicator:
+      password: "1"
+      options:
+        - replication
+
+postgresql:
+  listen: "127.0.0.1,192.168.1.152:5432"
+  connect_address: 192.168.1.155:5432
+  data_dir: /var/lib/postgresql/17/main
+  bin_dir: /usr/lib/postgresql/17/bin
+  authentication:
+    replication:
+      username: replicator
+      password: "1"
+    superuser:
+      username: postgres
+      password: ""
+
+tags:
+  nofailover: false
+  noloadbalance: false
+  clonefrom: false
+  nosync: false
+  
+sudo nano /etc/systemd/system/patroni.service
+
+[Unit]
+Description=High availability PostgreSQL Cluster
+After=syslog.targetnetwork.target
+[Service]
+Type=simple:
+User=postgres
+Group=postgres
+ExecStart=/usr/bin/patroni /etc/patroni.yml
+KillMode=process
+TimeoutSec=30
+Restart=no
+[Install]
+WantedBy=multi-user.target
+
+sudo systemctl daemon-reload
+sudo systemctl enable patroni
+sudo systemctl start patroni
+sudo systemctl status patroni
+  
+Вторая машина:
+sudo nano /etc/patroni.yml
+
+scope: cluster-patroni
+namespace: /db/
+name: node2
+
+restapi:
+  listen: 192.168.1.185:8008
+  connect_address: 192.168.1.185:8008
+
+etcd:
+  hosts: 192.168.1.155:2379,192.168.1.185:2379,192.168.1.152:2379
+
+postgresql:
+  listen: "127.0.0.1,192.168.1.152:5432"
+  connect_address: 192.168.1.185:5432
+  data_dir: /var/lib/postgresql/17/main
+  bin_dir: /usr/lib/postgresql/17/bin
+  authentication:
+    replication:
+      username: replicator
+      password: "1"
+    superuser:
+      username: postgres
+      password: "postgres"
+
+tags:
+  nofailover: false
+  noloadbalance: false
+  clonefrom: false
+  nosync: false
+
+sudo nano /etc/systemd/system/patroni.service
+
+[Unit]
+Description=High availability PostgreSQL Cluster
+After=syslog.targetnetwork.target
+[Service]
+Type=simple:
+User=postgres
+Group=postgres
+ExecStart=/usr/bin/patroni /etc/patroni.yml
+KillMode=process
+TimeoutSec=30
+Restart=no
+[Install]
+WantedBy=multi-user.target
+
+sudo systemctl daemon-reload
+sudo systemctl enable patroni
+sudo systemctl start patroni
+sudo systemctl status patroni
+
+Третья машина:
+sudo nano /etc/patroni.yml
+
+scope: cluster-patroni
+namespace: /db/
+name: node3
+
+restapi:
+  listen: 192.168.1.152:8008
+  connect_address: 192.168.1.152:8008
+
+etcd:
+  hosts: 192.168.1.155:2379,192.168.1.185:2379,192.168.1.152:2379
+
+postgresql:
+  listen: "127.0.0.1,192.168.1.152:5432"
+  connect_address: 192.168.1.152:5432
+  data_dir: /var/lib/postgresql/17/main
+  bin_dir: /usr/lib/postgresql/17/bin
+  authentication:
+    replication:
+      username: replicator
+      password: "1"
+    superuser:
+      username: postgres
+      password: "postgres"
+
+tags:
+  nofailover: false
+  noloadbalance: false
+  clonefrom: false
+  nosync: false
+  
+sudo nano /etc/systemd/system/patroni.service
+
+[Unit]
+Description=High availability PostgreSQL Cluster
+After=syslog.targetnetwork.target
+[Service]
+Type=simple:
+User=postgres
+Group=postgres
+ExecStart=/usr/bin/patroni /etc/patroni.yml
+KillMode=process
+TimeoutSec=30
+Restart=no
+[Install]
+WantedBy=multi-user.target
+
+sudo systemctl daemon-reload
+sudo systemctl enable patroni
+sudo systemctl start patroni
+sudo systemctl status patroni
+
+
+patronictl -c /etc/patroni/patroni.yml list
