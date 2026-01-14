@@ -16,3 +16,5 @@
 ![patroni3](images/patroni-first.png)
 4. Выполнил настройку patroni.yaml на первой машине с bootstrap. И настройку службы. Затем выполнил настройку patroni на второй и третьей ноде без секции bootstrap. После нескольких перехапусков кластер заработал. Причём, если выполнить рестарт ноде лидере, то лидер меняется.
 ![cluster](images/cluster-patroni.png)
+5. После перезагрузки VM нудно поправить конфиг ETCD ETCD_INITIAL_CLUSTER_STATE="existing" и запустить;
+![cluster](images/after_restart_vm.png)

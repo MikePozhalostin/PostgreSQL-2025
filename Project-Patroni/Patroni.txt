@@ -318,4 +318,4 @@ sudo systemctl start patroni
 sudo systemctl status patroni
 
 
-patronictl -c /etc/patroni/patroni.yml list
+patronictl -c /etc/patroni.yml list
