@@ -369,4 +369,5 @@ sudo systemctl status patroni
 Сначала лидер 152. Выполнил на 152 машине. Лидером стал 185
 ```bash
 sudo systemctl status patroni
+patronictl -c /etc/patroni.yml list
 ```
