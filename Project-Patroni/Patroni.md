@@ -371,3 +371,172 @@ sudo systemctl status patroni
 sudo systemctl status patroni
 patronictl -c /etc/patroni.yml list
 ```
+
+## Установка **Prometheus**
+
+**Установка на четвёртую машину 192.168.1.174**
+
+1.Установить пакеты:
+```bash
+sudo useradd --no-create-home --shell /bin/false prometheus
+
+sudo mkdir /etc/prometheus /var/lib/prometheus
+
+sudo chown -R prometheus:prometheus /etc/prometheus /var/lib/prometheus
+
+wget https://github.com/prometheus/prometheus/releases/download/v2.47.0/prometheus-2.47.0.linux-amd64.tar.gz
+
+tar xvf prometheus-2.47.0.linux-amd64.tar.gz
+
+cd prometheus-2.47.0.linux-amd64/
+
+sudo cp prometheus /usr/bin/
+
+sudo cp promtool /usr/bin/
+
+sudo chown prometheus:prometheus /usr/bin/prometheus
+
+sudo chown prometheus:prometheus /usr/bin/promtool
+```
+
+2.Настраить конфиг:
+
+```bash
+sudo nano /etc/prometheus/prometheus.yml
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'patroni'
+    static_configs:
+      - targets:
+        - '192.168.1.155:8008'
+        - '192.168.1.185:8008'
+        - '192.168.1.152:8008'
+    metrics_path: '/metrics'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+
+
+  - job_name: 'postgres'
+    static_configs:
+      - targets:
+        - '192.168.1.155:9187'
+        - '192.168.1.185:9187'
+        - '192.168.1.152:9187'
+
+
+  - job_name: 'node'
+    static_configs:
+      - targets:
+        - '192.168.1.155:9100'
+        - '192.168.1.185:9100'
+        - '192.168.1.152:9100'
+        - '192.168.1.174:9100'
+
+sudo chown prometheus:prometheus /etc/prometheus/prometheus.yml
+```
+
+3.Настроить службу:
+
+```bash
+sudo nano /etc/systemd/system/prometheus.service
+
+[Unit]
+Description=Prometheus
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=prometheus
+Group=prometheus
+Type=simple
+ExecStart=/usr/bin/prometheus \
+    --config.file=/etc/prometheus/prometheus.yml \
+    --storage.tsdb.path=/var/lib/prometheus/ \
+    --web.console.templates=/etc/prometheus/consoles \
+    --web.console.libraries=/etc/prometheus/console_libraries \
+    --web.listen-address=0.0.0.0:9090
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+```
+
+5.Запуcтить prometheus:
+```bash
+sudo systemctl daemon-reload
+
+sudo systemctl enable prometheus
+
+sudo systemctl start prometheus
+
+sudo systemctl status prometheus
+```
+
+## Установка Node-Exporter
+
+### Установка осуществляется на все машины
+
+1.Установка:
+
+```bash
+wget https://github.com/prometheus/node_exporter/releases/download/v1.7.0/node_exporter-1.7.0.linux-amd64.tar.gz
+
+tar xvf node_exporter-*.tar.gz
+
+cd node_exporter-1.7.0.linux-amd64/
+
+sudo cp node_exporter /usr/bin/
+
+sudo useradd --no-create-home --shell /bin/false node_exporter
+
+sudo chown node_exporter:node_exporter /usr/bin/node_exporter
+```
+
+2.Инициализация службы:
+
+```bash
+sudo nano /etc/systemd/system/node_exporter.service
+
+[Unit]
+Description=Node Exporter
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=node_exporter
+Group=node_exporter
+Type=simple
+ExecStart=/usr/bin/node_exporter
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+sudo systemctl daemon-reload
+
+sudo systemctl enable node_exporter
+
+sudo systemctl start node_exporter
+```
+
+## Установка Postgres Exporter
+
+### Установка на машины c patroni
+
+```bash
+sudo apt install prometheus-postgres-exporter
+
+sudo nano /etc/default/prometheus-postgres-exporter
+
+DATA_SOURCE_NAME='postgresql://postgres:postgres@127.0.0.1:5432/postgres?sslmode=disable'
+
+sudo systemctl enable prometheus-postgres-exporter
+
+sudo systemctl start prometheus-postgres-exporter
+```
