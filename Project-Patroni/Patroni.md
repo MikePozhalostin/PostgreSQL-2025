@@ -372,7 +372,7 @@ sudo systemctl status patroni
 patronictl -c /etc/patroni.yml list
 ```
 
-## Установка **Prometheus**
+## Установка Prometheus
 
 **Установка на четвёртую машину 192.168.1.174**
 
